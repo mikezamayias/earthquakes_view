@@ -1,9 +1,23 @@
-import 'package:http/http.dart';
+import 'package:flutter/material.dart';
 
-void main() async {
-  Response response = await get(
-    Uri.parse(
-        'feed://www.geophysics.geol.uoa.gr/stations/maps/seismicity.xml'),
-  );
-  print(response.body);
+import 'views/home_page.dart';
+
+void main() {
+  runApp(const EarthquakeView());
+}
+
+class EarthquakeView extends StatelessWidget {
+  const EarthquakeView({Key? key}) : super(key: key);
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const HomePage(),
+    );
+  }
 }

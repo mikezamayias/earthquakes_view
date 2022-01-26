@@ -1,4 +1,4 @@
-# earthquakes
+# earthquakes_view
 
 A new Flutter project.
 
