@@ -1,18 +1,24 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dart_rss/dart_rss.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-import '../models/earthquake_item.dart';
+import '../models/earthquake_event.dart';
 
-Future<List<EarthquakeItem>> parser() async {
+Future<List<EarthquakeEvent>> parser() async {
   final client = http.Client();
 
-  List<EarthquakeItem> data = await client
-      .get(Uri.parse(
-          'http://www.geophysics.geol.uoa.gr/stations/maps/seismicity.xml'))
-      .then((response) {
-    return response.body;
-  }).then(
+  List<EarthquakeEvent> data = await client
+      .get(
+    Uri.parse(
+      'http://www.geophysics.geol.uoa.gr/stations/maps/seismicity.xml',
+    ),
+  )
+      .then(
+    (response) {
+      return response.body;
+    },
+  ).then(
     (bodyString) {
       final channel = RssFeed.parse(bodyString);
       var earthquakes = List.generate(
@@ -20,7 +26,8 @@ Future<List<EarthquakeItem>> parser() async {
         (index) {
           RssItem item = channel.items[index];
           List<String> data = item.description!.split('<br>').sublist(1);
-          return EarthquakeItem(
+          return EarthquakeEvent(
+            id: parseDateTime(data[0]).millisecondsSinceEpoch,
             date: parseDateTime(data[0]),
             latitude: parseLatitude(data[1]),
             longitude: parseLongitude(data[2]),
@@ -33,7 +40,26 @@ Future<List<EarthquakeItem>> parser() async {
     },
   );
 
+  for (EarthquakeEvent item in data) {
+    addItemToFirestore(item);
+  }
+
   return data;
+}
+
+addItemToFirestore(EarthquakeEvent earthquakeEvent) {
+  return FirebaseFirestore.instance
+      .collection('earthquakes')
+      .doc(earthquakeEvent.id.toString())
+      .get()
+      .then((DocumentSnapshot ds) {
+    if (!ds.exists) {
+      FirebaseFirestore.instance
+          .collection('earthquake-events')
+          .doc(earthquakeEvent.id.toString())
+          .set(earthquakeEvent.toMap());
+    }
+  });
 }
 
 DateTime parseDateTime(String element) {
